@@ -7,13 +7,18 @@ const App = () => {
   const [products, setProducts] = useState([]);
   const [suggestedProducts, setSuggestedProducts] = useState([]);
 
-  const searchImages = async () => {
+  const searchByQuery = async () => {
     const params = new URLSearchParams({ q: query, n: 10 });
     try {
       const response = await axios.get('http://localhost:8000/app/find-documents-by-query', {
         params,
       });
-      setProducts(response.data.result)
+      let data = response.data;
+      if (typeof data === 'string') {
+        data = data.replace(/NaN/g, "\"\"")
+        data = JSON.parse(data);
+      }
+      setProducts(data.result)
     } catch (error) {
       console.error('Error fetching images:', error);
     }
@@ -25,7 +30,12 @@ const App = () => {
       const response = await axios.get('http://localhost:8000/app/find-similar-documents-by-sku', {
         params,
       });
-      setSuggestedProducts(response.data.result)
+      let data = response.data;
+      if (typeof data === 'string') {
+        data = data.replace(/NaN/g, "\"\"")
+        data = JSON.parse(data);
+      }
+      setSuggestedProducts(data.result)
     } catch (error) {
       console.error('Error fetching images:', error);
     }
@@ -36,6 +46,7 @@ const App = () => {
       <div className="image-container">
         {suggestedProducts && suggestedProducts.length ? suggestedProducts.map((product) => {
           const imagesString = product.images;
+          // eslint-disable-next-line no-useless-escape
           const cleanedString = imagesString.replace(/[\[\]']/g, '');
           const imagesArray = cleanedString.split(',');
           const firstImage = imagesArray[0];
@@ -56,18 +67,21 @@ const App = () => {
     <>
       <div className="container">
         <div className="input-container">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search images..."
-          />
-          <button onClick={searchImages}>Search</button>
+          <form onSubmit={e => e.preventDefault()}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search images..."
+            />
+            <button type="submit" onClick={searchByQuery}>Search</button>
+          </form>
         </div>
 
         <div className="image-container">
           {products && products.length ? products.map((product) => {
             const imagesString = product.images;
+            // eslint-disable-next-line no-useless-escape
             const cleanedString = imagesString.replace(/[\[\]']/g, '');
             const imagesArray = cleanedString.split(',');
             const firstImage = imagesArray[0];
